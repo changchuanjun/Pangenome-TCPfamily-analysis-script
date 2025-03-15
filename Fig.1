@@ -1,0 +1,265 @@
+Fig 1A was plotted by PPT. Fig 1C was plotted by iTOL(https://itol.embl.de/). 
+
+Fig 1B, Fig 1D, Fig 1E, and Fig 1F were plotted by the script below (R language code).
+
+# 加载必要的包
+library(ggplot2)
+library(ggsignif)
+library(dplyr)
+library(readxl)
+library(ggpubr)
+library(cowplot)
+library(ggpmisc)
+library(tidyverse)
+library(grid)
+library(ggrepel)
+library(ggprism)
+
+path2="D://Users//Desktop//苹果泛基因家族//Fig1_转座子其概况//上传githup——20250315//"
+
+#######################################################Fig 1B
+# Genome and protein-coding genes 
+
+genomeandgene <- read_excel(paste(path2,"Fig1_inputfile.xlsx",sep=""),sheet = "Genome_and_protein-coding_gene")
+names(genomeandgene)
+
+c14="#F7B6D2FF"
+c13="#E377C2FF"
+ggscatter_size=10 #控制点的大小
+font_size=20#字体大小
+lengend_size=20#图例字体大小
+text_size=8#标签大小
+
+pFig1B <- ggscatter(genomeandgene, x = "Genome_size", y = "genes",
+                add = "reg.line", # Add regressin line 
+                conf.int = TRUE, 
+                add.params = list(color=c13,fill = c14,size = 2),
+                color ="type",
+                alpha = 0.9,
+                palette =c("#fb9a99","#fdbf6f","#36A2EB"),
+                size =ggscatter_size)+ # Points color, shape and size
+  theme_bw() +
+  labs(y = "The number of protein-coding genes", x = "Genome size (Mb)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.title.x = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = lengend_size, family = "Times",face = "bold"),
+        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
+        #legend.position = 'none',
+        legend.title = element_blank(),
+        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
+        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
+        legend.position = c(0.99, 0.02), # 通过数值坐标将图例放在右下角
+        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
+  ) +
+  stat_cor(method = "pearson",label.x = 690, label.y = 53000,size=10,color=c13) +
+  # 添加带线条的标签
+  geom_text_repel(aes(label = species), 
+                  size = text_size, family="Times",face="bold",
+                  color = "black", 
+                  max.overlaps = Inf, # 允许所有标签
+                  box.padding = 0.7,   # 增加标签框周围的间距
+                  point.padding = 0.7, # 增加标签和数据点之间的间距
+                  segment.color = "grey50", # 设置连接线的颜色
+                  segment.size = 0.8)  # 设置连接线的宽度
+
+pFig1B
+
+# Genome and protein-coding genes
+#######################################################Fig 1B
+
+
+#######################################################Fig 1D
+# Stacked bar chart
+
+duijitu <- read_excel(paste(path2,"Fig1_inputfile.xlsx",sep=""),sheet = "重复序列堆积图")
+#duijitu <- duijitu1 %>%
+species_order <-unique(duijitu$species)
+
+unique(duijitu$element)
+
+element_order <- c("Simple repeats","Small RNA","SINEs","LINEs","DNA transposons","LTR/Copia","LTR/Gypsy")
+
+
+unique(duijitu$species)
+
+species_order <- c("M.fusca","Fupingqiuzi","M.sieversii",
+                   "Antonovka","M.sylvestris","Gala",
+                   "Honeycrisp","GDT2T","GS","OR",
+                   "SH","RA","M9",
+                   "HFTH1","MM106","WA38",
+                   "Hanfu","Fuji","FJ",
+                   "JG","COP","HC",
+                   "MA","SD","MO"
+                   )
+
+# 重新排列数据框中的因子顺序
+duijitu$element <- factor(duijitu$element, levels = element_order) # 填入你想要的顺序
+
+element_color <- c("LTR/Gypsy" = "#36A2EB",
+                   "LTR/Copia" = "#6a73cf", 
+                   "DNA transposons" = "#e1abbc", 
+                   "LINEs" = "#f2ccac", 
+                   "SINEs" = "#FDAE6BFF",
+                   "Small RNA" = "#9EDAE5FF",
+                   "Simple repeats" ="#74C476FF")
+ 
+View(duijitu)
+
+pFig1D <- ggplot(duijitu, aes(x = species, y = size, fill = element)) +
+  geom_col( width = 0.75,position = position_stack(vjust = 1)) +
+  #自定义颜色
+  scale_fill_manual(values=element_color) +
+  # 设置连续型 Y 轴刻度，步长为 100
+  scale_y_continuous(expand = c(0,0), limits = c(0, 500), breaks = seq(0, 500, by = 100)) +
+  #自定义X轴刻度,并缩短柱子与左右框线的留白
+  scale_x_discrete(expand = c(0.05,0.05), limits = species_order)+
+  coord_flip()+#翻转X、Y轴
+  #geom_text(aes(label = size),position = position_stack(vjust = 0.5), colour = "black", size = 5) +
+  labs(x = "", y = "counts", title = "") +
+  theme_prism(base_fontface = "plain",
+              base_family = "serif", 
+              base_size = 16,  
+              base_line_size = 0.8, 
+              axis_text_angle = 0) +
+  # 取消背景板网格线，并添加图片框线
+  labs(y = "Size (Mb)", x = "") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 5, r = 5, b = 5, l = 5), # 调整图表边距
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=15,face="bold"),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=15,face="bold"),
+        axis.title.x = element_text(size = 15, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = 15, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = 12, family = "Times",face = "bold"),
+       
+         axis.ticks.y = element_blank(),  # 隐藏 Y 轴刻度
+        axis.line.y = element_blank(),    # 隐藏 Y 轴线条
+        
+        legend.title = element_blank(),
+
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
+  )
+pFig1D
+
+# Stacked bar chart
+#######################################################Fig 1D
+
+#######################################################Fig 1E
+# Genome size and TE
+genomeandTE <- read_excel(paste(path2,"Fig1_inputfile.xlsx",sep=""),sheet = "Genome_and_TE")
+names(genomeandTE)
+
+c13="#31a354ff"
+c14="#c7e9c0ff"
+
+pFig1E <- ggscatter(genomeandTE, x = "genome_size", y = "TE_size",
+                add = "reg.line", # Add regressin line 
+                conf.int = TRUE, 
+                add.params = list(color=c13,fill = c14,size = 2),
+                color ="type",
+                alpha = 0.9,
+                palette =c("#fb9a99","#fdbf6f","#36A2EB"),
+                size = ggscatter_size)+ # Points color, shape and size
+  theme_bw() +
+  labs(y = "TE size (Mb)", x = "Genome size (Mb)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.title.x = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = lengend_size, family = "Times",face = "bold"),
+        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
+        #legend.position = 'none',
+        legend.title = element_blank(),
+        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
+        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
+        legend.position = c(0.99, 0.02), # 通过数值坐标将图例放在右下角
+        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
+  ) +
+  stat_cor(method = "pearson",label.x = 670, label.y = 500,size=10,color=c13) +
+  # 添加带线条的标签
+  geom_text_repel(aes(label = species), 
+                  size = text_size, family="Times",face="bold",
+                  color = "black", 
+                  max.overlaps = Inf, # 允许所有标签
+                  box.padding = 0.7,   # 增加标签框周围的间距
+                  point.padding = 0.7, # 增加标签和数据点之间的间距
+                  segment.color = "grey50", # 设置连接线的颜色
+                  segment.size = 0.8)  # 设置连接线的宽度
+
+pFig1E
+
+# #Genome size and TE
+#######################################################Fig 1E
+
+#######################################################Fig 1F
+# Genome size and CDS size
+genomeandcds <- read_excel(paste(path2,"Fig1_inputfile.xlsx",sep=""),sheet = "Genome_and_CDS")
+names(genomeandcds)
+
+c13="#756bb1ff"
+c14="#bcbddcff"
+
+pFig1F <- ggscatter(genomeandcds, x = "Genome_size", y = "cds_size",
+                add = "reg.line", # Add regressin line 
+                conf.int = TRUE, 
+                add.params = list(color=c13,fill = c14,size = 2),
+                color ="type",
+                alpha = 0.9,
+                palette =c("#fb9a99","#fdbf6f","#36A2EB"),
+                size =ggscatter_size)+ # Points color, shape and size
+  theme_bw() +
+  labs(y = "Total lengths of CDS (Mb)", x = "Genome size (Mb)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.title.x = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = lengend_size, family = "Times",face = "bold"),
+        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
+        #legend.position = 'none',
+        legend.title = element_blank(),
+        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
+        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
+        legend.position = c(0.99, 0.18), # 通过数值坐标将图例放在右下角
+        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
+  ) +
+  stat_cor(method = "pearson",label.x = 695, label.y = 65,size=10,color=c13) +
+  # 添加带线条的标签
+  geom_text_repel(aes(label = species), 
+                  size = text_size, family="Times",face="bold",
+                  color = "black", 
+                  max.overlaps = Inf, # 允许所有标签
+                  box.padding = 0.7,   # 增加标签框周围的间距
+                  point.padding = 0.7, # 增加标签和数据点之间的间距
+                  segment.color = "grey50", # 设置连接线的颜色
+                  segment.size = 0.8)  # 设置连接线的宽度
+
+pFig1F
+
+# Genome size and CDS size
+#######################################################Fig 1F
