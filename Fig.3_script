@@ -1,6 +1,11 @@
-Fig 2A, Fig 2B, Fig 2C, and Fig 2D were plotted by the script below (R language code).
+Fig 3A was plotted by PPT. Fig 3B was plotted by iTOL(https://itol.embl.de/). 
+
+Fig 3C was plotted by the script below (R language code).
+
+Fig 3D was plotted by Graphpad Pism9.5
 
 # 加载必要的包
+
 library(ggplot2)
 library(ggsignif)
 library(dplyr)
@@ -12,208 +17,45 @@ library(ggsci)
 library(ggh4x)
 library(ggprism)
 library(colorspace)
-library(tidyr)
-library(tibble)
-library(circlize)
-library(grid)
-library(ComplexHeatmap)
-library(ggrepel)
 
+#######################################################Fig 3C
+# Distribution of TCP gene family members across different Malus accessions.
 
-#######################################################Fig 2A
-# The number of TFs and percentage of TFs
+colors1=c(rep("#62B197",7),rep("#A797DA",16),rep("#E07B54",3))
+ggscatter_size=10 #控制点的大小
+font_size=20#字体大小
+lengend_size=20#图例字体大小
+text_size=8#标签大小
 
-c1="#FFB799"
-c2="#66c2a5"
-
-pFig2A <- ggplot(zonggongTF1, aes(x = species)) +
-  geom_bar(aes(y = total_TF_num, fill = "# of TFs"), stat = "identity", color = "black") +
-  geom_line(aes(y = TF_rate * 3500 / max_TF_rate, group = 1, color = "% of TFs"), size = 1) +
-  geom_point(aes(y = TF_rate * 3500 / max_TF_rate, color = "% of TFs"), size = 3) +
-  scale_y_continuous(
-    name = "# of TFs",
-    limits = c(0, 3500),
-    breaks = seq(0, 3500, by = 500),
-    sec.axis = sec_axis(~. * max_TF_rate / 3500, name = "% of TFs", 
-                        breaks = seq(0, max_TF_rate+1, by = 0.5))
-  ) +
-  scale_fill_manual(values = c("# of TFs" = c1)) +
-  scale_color_manual(values = c("% of TFs" = c2)) +
-  labs(#title = "Absolute and relative numbers of TFs in each Malus accessions",
-       x = "Accession",
-       fill = "",
-       color = "") +
-  theme_minimal() +
-  theme(
-    plot.title=element_text(size=15,face='bold',hjust=0.5),
-    #axis.text.x = element_text(angle = 45, hjust = 1),
-    panel.border = element_rect(color = "black", fill = NA),
-    #panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5),
-    #plot.background = element_rect(fill = "white", color = "black"),
-    axis.ticks = element_line(color = "black"),
-    axis.title.y.right = element_text(margin = margin(0, 0, 0, 20)),
-    axis.text.x=element_text(angle = 45, hjust = 1,colour="black",
-                             family="Times",size=15,face="bold"),
-    axis.text.y=element_text(hjust = 0.5,colour="black",
-                             family="Times",size=15,face="bold"),
-    axis.title.x = element_text(size = 17, face = "bold", colour = "black", family = "Times"),
-    axis.title.y = element_text(size = 17, face = "bold", colour = "black", family = "Times"),
-    legend.position = "top",
-    legend.direction = "horizontal",
-    legend.text = element_text(colour = "black", size = 15, family = "Times",face = "bold")
-  ) +
-  geom_label(aes(y = total_TF_num, label = paste0(total_TF_num, "")), 
-             vjust = -0.5, fill = "white", color = c1, 
-             fontface = "bold", label.size = 0.5,size=4.5) +
-  geom_label(aes(y = TF_rate * 3500 / max_TF_rate, label = paste0(TF_rate, "%")), 
-             vjust = -0.2, fill = "white", color = c2, 
-             fontface = "bold", label.size = 0.5,size=4.5)
-
-
-pFig2A
-
-# The number of TFs and percentage of TFs
-#######################################################Fig 2A
-
-
-#######################################################Fig 2B
-#The number of TF families (70 TF families) 
-
-circos.clear()#绘制完成后需要使用此函数完全清除布局
-
-# 调整圆环的内径和外径
-circos.par("track.height" = 0.2)  # 减小这个值以减小圆环的内径，值越小，圆环内径越大
-
-#调整圆环首尾间的距离，数值越大，距离越宽
-circos.par(gap.after=c(30))
-
-#设置颜色 
-color = colorRamp2(c(0,2.5,4.5), c("#fb8d62","white","#66c2a5")) 
-
-# 调整圆环的高度
-circos.par(track.height = 0.65)  # 增加这个值以使热图方格更大
-
-#画图
-circos.heatmap(abc4_wide,col=color,
-               dend.side="inside", #聚类放在环形内侧,控制行聚类树的方向，inside为显示在圆环内圈，outside为显示在圆环外圈
-               rownames.side="outside", #基因名放在环形外侧,控制矩阵行名的方向,与dend.side相同；但注意二者不能在同一侧，必须一内一外
-               rownames.col="black",#行颜色
-               rownames.cex=0.6, #行字体大小
-               rownames.font=0.6, #行字体粗细
-               cell.border ="white", #边缘颜色   
-               #cell.border ="#c2dcc6", #边缘颜色
-               bg.border = NA,#背景边缘颜色
-               show.sector.labels = T,#显示分的区域的标签      
-               cluster=FALSE #cluster=TRUE为对行聚类，cluster=FALSE则不显示聚类
-) 
-
-#添加图例标签
-grid.draw(Legend(title = "Score", col_fun = color))
-
-#The number of TF families (70 TF families) 
-#######################################################Fig 2B
-
-#######################################################Fig 2C
-# Correlation between the number of protein-coding genes and the number of TFs among 26 Malus accessions.
-
-c13="#fb8d62"
-c14="#FFCEB9"#"#dadaebff"
-
-pFig2C <- ggscatter(zonggongTF1, x = "genes", y = "total_TF_num",
-                add = "reg.line", # Add regressin line 
-                conf.int = TRUE, 
-                add.params = list(color=c13,fill = c14,size = 2),
-                color ="type",
-                alpha = 0.9,
-                palette =c("#fb9a99","#fdbf6f","#36A2EB"),
-                size =10)+ # Points color, shape and size
-  theme_bw() +
-  labs(y = "The number of TF", x = "The number of protein-coding genes") +
-  theme(panel.grid.major = element_blank(),
+pFig3C <- ggplot(abc3, aes(x = species, y = num, fill = type)) +
+#ggplot(abc2, aes(x = species, y = num)) +
+  geom_segment(aes(x = species, xend = species, y = 0, yend = num, color = species),size=2) +
+  geom_point(aes(x = species, y = num, color = species), size = 8) +
+  #geom_point(aes(x = species, y = num, color = species), shape = 1, size = 6) +
+  geom_text(aes(label = num, x = species, y = num + 1.5), hjust = -0.2, size = 5) + 
+  scale_color_manual(values = colors1) +
+  scale_y_continuous(expand = c(0, 0), limits = c(0, 55)) +
+  coord_flip() +
+  theme_bw()+
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
-        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        panel.border = element_rect(color = "black", size = 1.2,fill = NA),  # 设置边框颜色和宽度
+        axis.line = element_line(size = 0.5),
+        axis.ticks = element_line(size = 0.5),
+        axis.ticks.length = unit(0.1, "cm"),
         axis.text.x=element_text(hjust = 0.5,colour="black",
-                                 family="Times",size=20,face="bold"),
+                                 family="Times",size=12,face="bold"),
         axis.text.y=element_text(hjust = 0.5,colour="black",
-                                 family="Times",size=20,face="bold"),
-        axis.title.x = element_text(size = 20, face = "bold", colour = "black", family = "Times"),
-        axis.title.y = element_text(size = 20, face = "bold", colour = "black", family = "Times"),
-        legend.text = element_text(colour = "black", size = 20, family = "Times",face = "bold"),
-        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
-        #legend.position = 'none',
-        legend.title = element_blank(),
-        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
-        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
-        legend.position = c(0.99, 0.02), # 通过数值坐标将图例放在右下角
-        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
-        legend.box = "rect", # 设置图例框为矩形
-        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
-  ) +
-  stat_cor(method = "pearson",label.x = 44670, label.y = 2850,size=10,color=c13) +
-  # 添加带线条的标签
-  geom_text_repel(aes(label = species), 
-                  size = 8, family="Times",face="bold",
-                  color = "black", 
-                  max.overlaps = Inf, # 允许所有标签
-                  box.padding = 0.7,   # 增加标签框周围的间距
-                  point.padding = 0.7, # 增加标签和数据点之间的间距
-                  segment.color = "grey50", # 设置连接线的颜色
-                  segment.size = 0.8)  # 设置连接线的宽度
+                                 family="Times",size=12,face="bold"),
+        axis.title.x = element_text(hjust = 0.5,colour="black",
+                                    family="Times",size=12,face="bold"), 
+        axis.title.y = element_blank(),  
+        legend.position = "none")+
+  labs(y = "Number of TCP genes")
 
-pFig2C
 
-# Correlation between the number of protein-coding genes and the number of TFs among 26 Malus accessions.
-#######################################################Fig 2C
+pFig3C
 
-#######################################################Fig 2D
-
-# Correlation between the length of total CDS and the length of TFs among 26 Malus accessions. 
-
-c13="#66C2A5"#
-c14="#9CD7C2"#"#dadaebff"
-
-pFig2D <- ggscatter(cds, x = "cds_size", y = "TF_cds",
-                add = "reg.line", # Add regressin line 
-                conf.int = TRUE, 
-                add.params = list(color=c13,fill = c14,size = 2),
-                color ="type",
-                alpha = 0.9,
-                palette =c("#fb9a99","#fdbf6f","#36A2EB"),
-                size =10)+ # Points color, shape and size
-  theme_bw() +
-  labs(y = "Total lengths of TFs (Mb)", x = "The lengths of CDS (Mb)") +
-  theme(panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
-        axis.text.x=element_text(hjust = 0.5,colour="black",
-                                 family="Times",size=20,face="bold"),
-        axis.text.y=element_text(hjust = 0.5,colour="black",
-                                 family="Times",size=20,face="bold"),
-        axis.title.x = element_text(size = 20, face = "bold", colour = "black", family = "Times"),
-        axis.title.y = element_text(size = 20, face = "bold", colour = "black", family = "Times"),
-        legend.text = element_text(colour = "black", size = 20, family = "Times",face = "bold"),
-        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
-        #legend.position = 'none',
-        legend.title = element_blank(),
-        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
-        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
-        legend.position = c(0.99, 0.02), # 通过数值坐标将图例放在右下角
-        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
-        legend.box = "rect", # 设置图例框为矩形
-        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
-  ) +
-  stat_cor(method = "pearson",label.x = 51, label.y = 3.7,size=10,color=c13) +
-  # 添加带线条的标签
-  geom_text_repel(aes(label = species), 
-                  size = 8, family="Times",face="bold",
-                  color = "black", 
-                  max.overlaps = Inf, # 允许所有标签
-                  box.padding = 0.7,   # 增加标签框周围的间距
-                  point.padding = 0.7, # 增加标签和数据点之间的间距
-                  segment.color = "grey50", # 设置连接线的颜色
-                  segment.size = 0.8)  # 设置连接线的宽度
-
-pFig2D
-
-# Correlation between the length of total CDS and the length of TFs among 26 Malus accessions. 
-#######################################################Fig 2D
+# Distribution of TCP gene family members across different Malus accessions.
+#######################################################Fig 3C
