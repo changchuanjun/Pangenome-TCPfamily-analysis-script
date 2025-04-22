@@ -1,0 +1,299 @@
+Fig 4A,Fig 4B,Fig 4C,Fig 4D,Fig 4E, and Fig 4F were plotted by the script below (R language code).
+
+# 加载必要的包
+library(ggplot2)
+library(ggsignif)
+library(dplyr)
+library(readxl)
+library(ggpubr)
+library(cowplot)
+library(ggpmisc)
+library(ggsci)
+library(ggh4x)
+library(ggprism)
+library(ggrepel)
+library(colorspace)
+library(openxlsx)
+
+
+
+#######################################################Fig 4A
+#Distribution of TCP subfamilies
+
+color111 <- c("#36A2EB","#fdbf6f","#fb9a99")
+
+pFig4A <- ggplot(abc5_filled, aes(x = species, y = num, fill = sub_family)) +
+  geom_col( width = 0.75,position = position_stack(vjust = 1)) +
+  
+  #自定义颜色
+  scale_fill_manual(values = color111) +
+  #自定义Y轴刻度,并缩短柱子与上下框线的留白
+  scale_y_continuous(expand = c(0.03, 0.03), limits = c(0, 50), breaks = seq(0, 50, by = 10)) +
+  #自定义X轴刻度,并缩短柱子与左右框线的留白
+  scale_x_discrete(expand = c(0.03,0.03), limits = species_order)+
+  coord_flip()+#翻转X、Y轴
+  geom_text(aes(label = num), 
+            position = position_stack(vjust = 0.5), 
+            colour = "black", 
+            size = 5) +
+  labs(x = "", y = "Number", title = "") +
+  theme_bw() + 
+  # 取消背景板网格线，并添加图片框线
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        #panel.border = element_rect(color = "black", size = 1,fill = NA),  # 设置边框颜色和宽度
+        
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=15,face="bold",angle = 90),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=15,face="bold"),
+        axis.title.x = element_text(size = 15, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = 15, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = 12, family = "Times",face = "bold"),
+        axis.ticks.length = unit(0.1, "cm"),
+        #axis.ticks.y = element_blank(),  # 隐藏 Y 轴刻度
+        #axis.line.y = element_blank(),    # 隐藏 Y 轴线条
+        
+        legend.title = element_blank(),
+        
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 0.7) # 为图例框添加黑色边框
+  )
+
+pFig4A
+
+#Distribution of TCP subfamilies
+#######################################################Fig 4A
+
+
+#######################################################Fig 4B
+#Chromosomal distribution of TCP genes
+
+cc <- c('#FFFFFF','#edf4f1', '#c2dcc6', '#afdae0', '#7ac7e0','#44b0e2','#fdd0a2ff', '#fdae6bff','#fd8d3cff',"#ef6547")
+
+# 创建 ggplot 图形对象
+pFig4B <- ggplot(abc4_filled, aes(x = chromosome, y = species, fill = num)) +
+  # 添加瓦片图层，并设置边框颜色为黑色
+  geom_tile(color = 'black') +
+  # 使用 scale_fill_gradientn 函数设定填充颜色
+  scale_fill_gradientn(colors = cc) +
+  # 添加文本显示 number 值在每个瓦片中心
+  geom_text(aes(label = ifelse(is.na(num), "0", num)), color = 'black', size = 6) +
+  # 调整 X 轴文本方向和位置
+  scale_x_discrete(position = "top") +
+  # 设置主题为白色背景
+  theme_bw() +
+  # 调整坐标轴文本的旋转角度和大小
+  theme(axis.text.x = element_text(angle = 0, hjust = 0.5,colour="black",
+                                   family="Times",size=15,face="bold"),
+        axis.text.y = element_text(vjust = 0.5, colour="black",
+                                   family="Times",size=15,face="bold"),
+        plot.margin = margin(t = 15, r = 15, b =15, l = 15), # 调整图表边距
+        axis.title = element_blank(),
+        legend.title = element_blank(),
+        legend.text = element_text(colour = "black", size = 10, family = "Times",face = "bold"),
+        legend.position = 'none'
+        #axis.text = element_text(size = 15, color = 'black')
+  )
+
+pFig4B
+
+#Chromosomal distribution of TCP genes
+#######################################################Fig 4B
+
+#######################################################Fig 4C
+
+#Correlation between total TF number and total TCP gene numbers
+
+c13="#7C1A97"
+c14="#C99BFF"
+
+pFig4C <- ggscatter(number_correlation, x = "total_TF_num", y = "num",
+                add = "reg.line", # Add regressin line 
+                conf.int = TRUE, 
+                add.params = list(color=c13,fill = c14,size = 2),
+                color ="type",
+                alpha = 0.9,
+                palette =c("#fb9a99","#fdbf6f","#36A2EB"),
+                size = ggscatter_size)+ # Points color, shape and size
+  theme_bw() +
+  labs(y = "The number of TCP genes", x = "The number of total TF") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.title.x = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = lengend_size, family = "Times",face = "bold"),
+        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
+        #legend.position = 'none',
+        legend.title = element_blank(),
+        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
+        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
+        legend.position = c(0.99, 0.02), # 通过数值坐标将图例放在右下角
+        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
+  ) +
+  stat_cor(method = "pearson",label.x = 2250, label.y = 53,size=10,color=c13) +
+  # 添加带线条的标签
+  geom_text_repel(aes(label = species), 
+                  size = text_size, family="Times",face="bold",
+                  color = "black", 
+                  max.overlaps = Inf, # 允许所有标签
+                  box.padding = 0.7,   # 增加标签框周围的间距
+                  point.padding = 0.7, # 增加标签和数据点之间的间距
+                  segment.color = "grey50", # 设置连接线的颜色
+                  segment.size = 0.8)  # 设置连接线的宽度
+
+pFig4C
+
+#Correlation between total TF number and total TCP gene numbers
+#######################################################Fig 4C
+
+#######################################################Fig 4D
+# Correlation between total coding sequence length and total TCP gene length
+
+c13="#7c9d97"#
+c14="#c2dcc6"
+
+pFig4D <- ggscatter(tf_content, x = "TF_cds", y = "TCP_cds",
+          add = "reg.line", # Add regressin line 
+          conf.int = TRUE, 
+          add.params = list(color=c13,fill = c14,size = 2),
+          color ="type",
+          alpha = 0.9,
+          palette =c("#fb9a99","#fdbf6f","#36A2EB"),
+          size = ggscatter_size)+ # Points color, shape and size
+  theme_bw() +
+  labs(y = "The length of TCP member(Mb)", x = "The length of total TF(Mb)") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.title.x = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = lengend_size, family = "Times",face = "bold"),
+        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
+        #legend.position = 'none',
+        legend.title = element_blank(),
+        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
+        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
+        legend.position = c(0.99, 0.02), # 通过数值坐标将图例放在右下角
+        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
+  ) +
+  stat_cor(method = "pearson",label.x = 2.7, label.y = 0.07,size=10,color=c13) +
+  # 添加带线条的标签
+  geom_text_repel(aes(label = species), 
+                  size = text_size, family="Times",face="bold",
+                  color = "black", 
+                  max.overlaps = Inf, # 允许所有标签
+                  box.padding = 0.7,   # 增加标签框周围的间距
+                  point.padding = 0.7, # 增加标签和数据点之间的间距
+                  segment.color = "grey50", # 设置连接线的颜色
+                  segment.size = 0.8)  # 设置连接线的宽度
+
+pFig4D
+
+# Correlation between total coding sequence length and total TCP gene length
+
+#######################################################Fig 4D
+
+#######################################################Fig 4E
+#Correlation between TCP subfamily member numbers and TCP family member counts
+
+# 运行你的绘图代码
+pFig4E <- ggplot(data = abc3class, aes(x = num, y = class_num, group = sub_family, color = sub_family)) + 
+  geom_point(aes(fill = sub_family, shape = sub_family), size =13, color = "#000000", alpha = 0.7) + 
+  #geom_point(aes(fill = sub_family, shape = sub_family), size =9,alpha = 0.7) + 
+  geom_smooth(aes(color = sub_family), size = 2.5,method = "lm", formula = y ~ x, se = FALSE) +
+  stat_cor(method = "pearson", parse = TRUE, size = 10) + 
+  scale_shape_manual(values = c(21, 21, 21)) + 
+  scale_fill_manual(values = c("CYC/TB1" = "#fdc086",
+                               "PCF" = "#fb9a99",
+                               "CIN" = "#36A2EB")) + 
+  
+  scale_color_manual(values = c("CYC/TB1" = "#fdc086",
+                                "PCF" = "#fb9a99",
+                                "CIN" = "#36A2EB")) + 
+  labs(y = "The number of TCP sumfamily member", x = "The number of TCP family member") +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.title.x = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = lengend_size, family = "Times",face = "bold"),
+        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
+        #legend.position = 'none',
+        legend.title = element_blank(),
+        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
+        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
+        legend.position = c(0.99, 0.01), # 通过数值坐标将图例放在右下角
+        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
+  )
+
+pFig4E
+
+#Correlation between TCP subfamily member numbers and TCP family member counts
+#######################################################Fig 4E
+
+
+#######################################################Fig 4F
+#Correlation analysis of TCP subclasses (Class I and Class II) member numbers and total TCP family member counts
+color_class1="#f16367"
+color_class2="#5266af"
+
+pFig4F <- ggplot(data = abc4class, aes(x = num, y = class_num, group = class, color = class)) + 
+  geom_point(aes(fill = class, shape = class), size =13, color = "#000000", alpha = 0.3) + 
+  #geom_point(aes(fill = class, shape = class), size =9,alpha = 0.7) + 
+  geom_smooth(aes(color = class), size = 2.5,method = "lm", formula = y ~ x, se = FALSE) +
+  stat_cor(method = "pearson", parse = TRUE, size = 10) + 
+  scale_shape_manual(values = c(21,21)) + 
+  scale_fill_manual(values = c("Class I" = color_class1,
+                               "Class II" = color_class2)) + 
+  
+  scale_color_manual(values = c("Class I" = color_class1,
+                                "Class II" = color_class2)) + 
+  labs(y = "The number of TCP sumclass member", x = "The number of TCP family member") +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=font_size,face="bold"),
+        axis.title.x = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = font_size, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = lengend_size, family = "Times",face = "bold"),
+        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
+        #legend.position = 'none',
+        legend.title = element_blank(),
+        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
+        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
+        legend.position = c(0.99, 0.02), # 通过数值坐标将图例放在右下角
+        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
+  )
+
+pFig4F
+
+#Correlation analysis of TCP subclasses (Class I and Class II) member numbers and total TCP family member counts
+#######################################################Fig 4F
