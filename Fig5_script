@@ -1,0 +1,487 @@
+Fig 5A,Fig 5B,Fig 5C,Fig 5D,Fig 5E, and Fig 5F were plotted by the script below (R language code).
+
+# 加载必要的包
+library(tidyverse)
+library(magrittr)
+library(readxl)
+library(ggrepel)
+library(ggsignif)
+library(ggtrendline)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(ggpubr)
+library(ggalluvial)
+library(ggpmisc)
+library(cowplot)
+library(RColorBrewer)
+library(ggridges)
+
+
+#######################################################Fig 5A
+#Variation in the number of TCP OGGs within the pan-TCP and core-TCP genes. 
+
+# 读取数据
+data <- read_tsv(paste(path, "20241204PanGenomeData.txt", sep = ""))
+
+# 按样本数量分组计算均值和标准差
+grouped_data <- data %>%
+  group_by(GenomeNum) %>%
+  summarise(
+    PanGenome_Mean = mean(`Pan-Genome Size`),
+    PanGenome_SD = sd(`Pan-Genome Size`),
+    CoreGenome_Mean = mean(`Core Genome Size`),
+    CoreGenome_SD = sd(`Core Genome Size`)
+  )
+
+core_color="#795291"
+pan_color="#f5ad65"
+
+# 绘制核心基因组和泛基因组趋势图
+pFig5A <- ggplot(grouped_data, aes(x = GenomeNum)) +
+  # 添加泛基因组误差棒和折线
+  geom_errorbar(aes(ymin = PanGenome_Mean - PanGenome_SD, ymax = PanGenome_Mean + PanGenome_SD, color = "Pan-Genome Size"), 
+                width = 0.2) +
+  geom_line(aes(y = PanGenome_Mean, color = "Pan-Genome Size"), size = 1.5) +
+  geom_point(aes(y = PanGenome_Mean, color = "Pan-Genome Size"), size = 2) +
+  
+  # 添加核心基因组误差棒和折线
+  geom_errorbar(aes(ymin = CoreGenome_Mean - CoreGenome_SD, ymax = CoreGenome_Mean + CoreGenome_SD, color = "Core Genome Size"), 
+                width = 0.2) +
+  geom_line(aes(y = CoreGenome_Mean, color = "Core Genome Size"), size = 1.5) +
+  geom_point(aes(y = CoreGenome_Mean, color = "Core Genome Size"), size = 2) +
+  
+  # 图形美化
+  labs(x = "Genome Number", y = "The number of TCP family set", color = "Legend") +
+  theme_minimal(base_size = 15) +
+  theme(
+    panel.grid = element_blank(), # 移除背景网格
+    panel.border = element_rect(color = "black", fill = NA, size = 0.7), # 添加边框
+    axis.ticks = element_line(color = "black", size = 0.5), # 显式添加刻度线
+    plot.title = element_text(size = 15, hjust = 0.5, face = "bold"),
+    axis.text.x = element_text(hjust = 0.5, colour = "black", face = "bold",
+                               family = "Times", size = 12),
+    axis.text.y = element_text(family = "Times", face = "bold",
+                               size = 12, colour = "black"),  # 设置X和Y轴的字体颜色和大小
+    axis.title.x = element_text(family = "Times",
+                                size = 14, face = "bold", colour = "black"),
+    axis.title.y = element_text(family = "Times",
+                                size = 14, face = "bold", colour = "black"),
+    legend.text = element_text(family = "Times", 
+                               colour = "black", size = 15),
+    legend.title = element_blank(),
+    legend.position = c(0.8, 0.6) # 将图例移动到图形内部
+  ) +
+  scale_x_continuous(breaks = seq(0, max(grouped_data$GenomeNum), by = 1)) + # 设置X轴刻度
+  scale_y_continuous(breaks = seq(0, max(grouped_data$PanGenome_Mean), by = 1)) + # 设置Y轴刻度
+  scale_color_manual(values = c("Pan-Genome Size" = pan_color, "Core Genome Size" = core_color)) # 自定义颜色
+
+pFig5A
+
+#Variation in the number of TCP OGGs within the pan-TCP and core-TCP genes. 
+#######################################################Fig 5A
+
+
+#######################################################Fig 5B
+#Proportion of TCP OGGs in the core, softcore, and dispensable groups. 
+
+
+#The proportion of OGGs, categorized by different types, among the 26 OGGs.(Pie chart)
+# 数据处理与分组,确定哪些OG属于核心、私有等。
+dat.family.group <- read_excel(paste(path,"gene_count.xlsx",sep=""),sheet = "Sheet3") %>% 
+  dplyr::select(-Total) %>% 
+  column_to_rownames("Orthogroup") %>% 
+  mutate(across(everything(), ~ifelse(. > 0, 1, 0))) %>% 
+  rowSums() %>% 
+  as.data.frame() %>% 
+  rownames_to_column() %>% 
+  magrittr::set_colnames(c("familyID", "total")) %>% 
+  mutate(group = case_when(
+    total == 26 ~ "Core",
+    total < 26 & total >= 24 ~ "SoftCore",
+    total < 24 & total >= 2 ~ "Dispensable",
+    total == 1 ~ "Private",
+    TRUE ~ "Unknown"
+  ))
+
+# 查看输出
+print(dat.family.group)
+#View(dat.family.group)
+
+# 修改 myfun 函数
+myfun <- function(x) {
+  y <- c()
+  for (i in 1:length(x)) {
+    if (i == 1) {
+      new_y <- x[i] / 2
+    } else {
+      new_y <- sum(x[1:(i - 1)]) + x[i] / 2
+    }
+    y <- append(y, new_y)
+  }
+  return(y)
+}
+
+myfun(c(1,4,7,8))
+
+# 数据汇总与绘图
+plot_data <- dat.family.group %>% 
+  group_by(group) %>% 
+  summarise(count = n()) %>% 
+  mutate(prop = sprintf("%0.2f", count * 100 / sum(count))) %>% 
+  mutate(label = paste0(prop, "%")) %>% 
+  mutate(group = factor(group, levels = rev(c("Core", "SoftCore", "Dispensable", "Private")))) %>% 
+  arrange(group) %>% 
+  ungroup() %>% 
+  mutate(y.position = myfun(rev(count))) 
+
+color2=c("#795291","#f6c6d6","#f5ad65")
+
+pFig5B1 <- plot_data %>%
+  ggplot(aes(y = count, x = "", fill = group)) +
+  geom_text_repel(
+    aes(label = paste0(rev(group), "\n", rev(label)), y = y.position),
+    nudge_x = c(1, 1, 1, 1)[1:length(plot_data$count)]
+  ) +
+  geom_bar(width = 1, stat = "identity", alpha = 0.7, show.legend = FALSE) +
+  coord_polar("y", start = 0) +
+  theme_void(base_size = 15) +
+  scale_fill_manual(values = rev(color2)) +
+  theme(plot.margin = unit(c(1, 1, 1, 1), "cm"))
+
+pFig5B1
+#The proportion of OGGs, categorized by different types, among the 26 OGGs.(Pie chart)
+
+
+
+
+#The number of TCP OGGs in the 26 genomes with different frequencies.(Histogram)
+
+dat.family.group1 <- read_excel(paste(path,"gene_count.xlsx",sep=""),sheet = "Sheet3") %>% 
+  dplyr::select(familyID=Orthogroup,gene_num=Total)
+
+bar.dat <- dat.family.group %>%
+  left_join(dat.family.group1,by="familyID")
+
+bar.dat1 <- bar.dat # 复制原数据框
+bar.dat1$gene_num <- 1 # 修改 gene_num 列为 1
+#View(bar.dat1)
+
+bar.dat2 <- bar.dat1 %>%
+  group_by(total) %>%
+  summarise(gene_num = sum(gene_num)) %>%
+  right_join(full_total, by = "total") %>%
+  mutate(gene_num = replace_na(gene_num, 0)) %>%
+  mutate(group = case_when(
+    total == 26 ~ "Core",
+    total < 26 & total >= 24 ~ "SoftCore",
+    total < 24 & total >= 2 ~ "Dispensable",
+    total == 1 ~ "Private"
+  )) %>%
+  select(total, group, gene_num) %>%
+  arrange(total)
+
+names(bar.dat2) <- c("Frequency","group","Family_number")
+
+# 绘制堆叠条形图
+pFig5B2 <- ggplot(data = bar.dat2,
+                 aes(x = Frequency, y = Family_number)) +
+  geom_col(aes(fill = group),
+           show.legend = FALSE,
+           alpha = 0.8) +
+  scale_x_continuous(breaks = c(seq(1, 26, 1), 26)) +
+  scale_fill_manual(values = c(
+    "Private" = "#e6db91", 
+    "Dispensable" = "#f5ad65", 
+    "SoftCore" = "#f6c6d6", 
+    "Core" = "#795291"
+  )) +
+  theme_bw(base_size = 15) +
+  theme(
+    panel.grid = element_blank(), # 移除背景网格
+    panel.border = element_rect(color = "black", fill = NA, size = 0.7), # 添加边框
+    axis.ticks = element_line(color = "black", size = 0.5), # 显式添加刻度线
+    plot.title = element_text(size = 15, hjust = 0.5, face = "bold"),
+    axis.text.x = element_text(hjust = 0.5, colour = "black", face = "bold",
+                               family = "Times", size = 12),
+    axis.text.y = element_text(family = "Times", face = "bold",
+                               size = 12, colour = "black"),  # 设置X和Y轴的字体颜色和大小
+    axis.title.x = element_text(family = "Times",
+                                size = 14, face = "bold", colour = "black"),
+    axis.title.y = element_text(family = "Times",
+                                size = 14, face = "bold", colour = "black"),
+    legend.text = element_text(family = "Times", face = "bold",
+                               colour = "black", size = 10),
+    legend.title = element_text(family = "Times", face = "bold",
+                                colour = "black", size = 12),
+    legend.position = c(0.8, 0.6) # 将图例移动到图形内部
+  ) +
+  scale_y_continuous(expand = expansion(mult = c(0, 0.1))) 
+
+pFig5B2 
+
+#The number of TCP OGGs in the 26 genomes with different frequencies.(Histogram)
+
+#Proportion of TCP OGGs in the core, softcore, and dispensable groups. 
+#######################################################Fig 5B
+
+
+#######################################################Fig 5C
+
+#The number of TCP genes in each genome categorized into the core, softcore, and dispensable groups. 
+
+duidietu <- read_excel(paste(path,"gene_count.xlsx",sep=""),sheet = "sangji") %>%
+  dplyr::select("id","group","type","species")
+
+#View(duidietu)
+
+duidietu1 <- group_by(duidietu,species,type) %>%
+  summarise(num=n()) %>%
+  data.frame() 
+species_order <- c("M.angustifolia","M.fusca","Fupingqiuzi","M.sieversii",
+                    "Antonovka","M.sylvestris","Gala",
+                    "Honeycrisp","GDT2T","GS","OR",
+                    "SH","RA","M9",
+                    "HFTH1","MM106","WA38",
+                    "Hanfu","Fuji","FJ",
+                    "JG","COP","HC",
+                    "MA","SD","MO")
+
+duidietu5 <- group_by(duidietu,type,species) %>%
+  summarise(num=n()) %>%
+  data.frame() 
+
+annotation5 <- dplyr::select(duidietu5,species,type)
+class(annotation5)
+# 创建一个包含所有可能组合的数据框
+all_combinations5 <- expand.grid(type = unique(duidietu5$type),
+                                 species = unique(duidietu5$species))
+# 合并原始数据和所有可能组合的数据框，并用 0 填充缺失值
+duidietu5_filled <- all_combinations5 %>%
+  left_join(duidietu5, by = c("type", "species")) %>%
+  mutate(num = ifelse(is.na(num), 0, num))
+
+duidietu5_filled$species <- factor(duidietu5_filled$species, levels = species_order)
+
+# 定义颜色
+color111 <- c("Core" = "#795291", "SoftCore" = "#f6c6d6", "Dispensable" = "#f5ad65")
+
+# 修改 type 列的顺序
+#duidietu5_filled$type <- factor(duidietu5_filled$type, levels = c("Core", "SoftCore", "Dispensable"))
+duidietu5_filled$type <- factor(duidietu5_filled$type, levels = c("Dispensable", "SoftCore", "Core"))
+
+pFig5C <- ggplot(duidietu5_filled, aes(x = species, y = num, fill = type)) +
+  geom_col( width = 0.75,position = position_stack(vjust = 1)) +
+  
+  #自定义颜色
+  #scale_fill_manual(num=c("#e1abbc","#edd064","#0eb0c8","#f2ccac","#a1d5b9","#6a73cf")) +
+  scale_fill_manual(values = color111) +
+  #自定义Y轴刻度,并缩短柱子与上下框线的留白
+  scale_y_continuous(expand = c(0.03, 0.03), limits = c(0, 50), breaks = seq(0, 50, by = 10)) +
+  #自定义X轴刻度,并缩短柱子与左右框线的留白
+  scale_x_discrete(expand = c(0.03,0.03), limits = species_order)+
+  coord_flip()+#翻转X、Y轴
+  geom_text(aes(label = num), 
+            position = position_stack(vjust = 0.5), 
+            colour = "black", 
+            size = 4.5) +
+  labs(x = "", y = "Number", title = "") +
+  theme_bw() + 
+  # 取消背景板网格线，并添加图片框线
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        #panel.border = element_rect(color = "black", size = 1,fill = NA),  # 设置边框颜色和宽度
+        
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=12,face="bold",angle = 0),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=12,face="bold"),
+        axis.title.x = element_text(size = 14, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = 14, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = 8, family = "Times",face = "bold"),
+        axis.ticks.length = unit(0.1, "cm"),
+        #axis.ticks.y = element_blank(),  # 隐藏 Y 轴刻度
+        #axis.line.y = element_blank(),    # 隐藏 Y 轴线条
+        
+        legend.title = element_blank(),
+        
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 0.7) # 为图例框添加黑色边框
+  )
+
+pFig5C
+
+#The number of TCP genes in each genome categorized into the core, softcore, and dispensable groups. 
+
+#######################################################Fig 5C
+
+
+
+#######################################################Fig 5D
+# Correlation between the total number of TCP family members and the number of three types of TCP OGGs (core, softcore, and dispensable) members.
+
+duidietu_total <- group_by(duidietu,species) %>%
+  summarise(num=n()) 
+
+correlation <- duidietu5_filled %>%
+  left_join(duidietu_total,by="species")
+
+names(correlation) <- c("type","species","class_num","num")
+
+correlation_class <- dplyr::select(correlation,"type","class_num","num")
+
+color2=c("#795291","#f6c6d6","#f5ad65")
+
+# 运行绘图代码
+pFig5D <- ggplot(data = correlation_class, aes(x = num, y = class_num, group = type, color = type)) + 
+  geom_point(aes(fill = type, shape = type), size =10, color = "#000000", alpha = 0.7) + 
+  #geom_point(aes(fill = sub_family, shape = sub_family), size =9,alpha = 0.7) + 
+  geom_smooth(aes(color = type), size = 2.5,method = "lm", formula = y ~ x, se = FALSE) +
+  stat_cor(method = "pearson", parse = TRUE, size = 8) + 
+  scale_shape_manual(values = c(21, 21, 21)) + 
+  scale_fill_manual(values = c("Dispensable" = "#f5ad65",
+                               "Core" = "#795291",
+                               "SoftCore" = "#f6c6d6")) + 
+  
+  scale_color_manual(values = c("Dispensable" = "#f5ad65",
+                                "Core" = "#795291",
+                                "SoftCore" = "#f6c6d6")) + 
+  #labs(y = "The number of TCP member", x = "The number of TCP family member") +
+  labs( x = "The number of TCP family members",y = "The number of different TCP family group members") +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=15,face="bold"),
+        axis.text.y=element_text(hjust = 0.5,colour="black",
+                                 family="Times",size=15,face="bold"),
+        axis.title.x = element_text(size = 15, face = "bold", colour = "black", family = "Times"),
+        axis.title.y = element_text(size = 15, face = "bold", colour = "black", family = "Times"),
+        legend.text = element_text(colour = "black", size = 9, family = "Times",face = "bold"),
+        #legend.title = element_text(colour = "black", size = 12, family = "Times"),
+        #legend.position = 'none',
+        legend.title = element_blank(),
+        #panel.border = element_rect(colour = "black", size = 1.2), # 加粗边框线
+        #axis.ticks = element_line(colour = "black", size = 1)   # 加粗刻度线
+        legend.position = c(0.25, 0.48), # 通过数值坐标将图例放在右下角
+        legend.justification = c("right", "bottom"), # 确保图例的锚点在右下角
+        legend.box = "rect", # 设置图例框为矩形
+        legend.box.background = element_rect(colour = "black", size = 1) # 为图例框添加黑色边框
+  )
+pFig5D
+
+# Correlation between the total number of TCP family members and the number of three types of TCP OGGs (core, softcore, and dispensable) members.
+
+#######################################################Fig 5D
+
+
+
+#######################################################Fig 5E
+#Comparison of gene length (bp) between core and non-core TCP genes.
+
+path1="D://Users//Desktop//苹果泛基因家族//尝试泛基因家族分析_20241202//泛基因家族算基因长度//"
+abc <- read_excel(paste(path1,"基因长度.xlsx",sep=""),sheet = "验证基因长度基因_蛋白质序列长度基因_CDS序列长度")
+
+data1 <- dplyr::select(abc,type,gene_length)
+names(data1)
+
+unique(data1$type)
+
+data1$type <- factor(data1$type, levels = c("non-Core","Core"))
+
+color1=c("#9fb2da","#9F7DB2")
+
+# 设置比较组
+my_comparisons <- list( c("non-Core", "Core"))
+t.test(data1$gene_length[data1$type == "non-Core"], data1$gene_length[data1$type == "Core"])
+
+p5 <- ggplot(data1, aes(type, gene_length, color = type)) +
+  geom_boxplot(width = 0.7, outlier.color = NA, alpha = 1) +
+  # 使用 shape = 21 创建带外圈的散点，填充颜色通过 aes 来映射
+  geom_jitter(width = 0.2, size = 5, alpha = 1, shape = 21, 
+              aes(fill = type), color = "black", stroke = 0.5) +  # 使用 aes(fill = type) 映射数据中的分类变量
+  scale_color_manual(values = color1) +  # 映射外圈的颜色，使用 color1
+  scale_fill_manual(values = color1) +  # 映射填充色，使用 color1
+  xlab('') + ylab('Gene length') +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x = element_text(angle = 0, hjust = 0.5, colour = "black",
+                                   family = "Times", size = 15, face = "bold"),
+        axis.text.y = element_text(hjust = 0.5, colour = "black",
+                                   family = "Times", size = 15, face = "bold"),
+        axis.title.x = element_text(hjust = 0.5, colour = "black",
+                                    family = "Times", size = 15, face = "bold"), 
+        axis.title.y = element_text(hjust = 0.5, colour = "black",
+                                    family = "Times", size = 15, face = "bold"),
+        legend.position = 'none')
+
+print(p5)
+
+
+pFig5E <- p5 +
+  ylim(c(0, 38000)) +  # 根据需要调整 Y 轴的范围
+  stat_compare_means(comparisons = my_comparisons,method = "t.test",
+                     label = "p.signif",size = 8) 
+
+pFig5E
+
+#Comparison of gene length (bp) between core and non-core TCP genes.
+#######################################################Fig 5E
+
+
+#######################################################Fig 5F
+#Comparison of CDS length (bp) between core and non-core TCP genes.
+
+path1="D://Users//Desktop//苹果泛基因家族//尝试泛基因家族分析_20241202//泛基因家族算基因长度//"
+abc <- read_excel(paste(path1,"基因长度.xlsx",sep=""),sheet = "验证基因长度基因_蛋白质序列长度基因_CDS序列长度")
+data2 <- dplyr::select(abc,type,CDS_length)
+names(data2)
+
+unique(data2$type)
+
+data2$type <- factor(data2$type, levels = c("non-Core","Core"))
+
+color1=c("#f5ad65","#F29A9C")
+
+# 设置比较组
+my_comparisons <- list( c("non-Core","Core"))
+
+t.test(data2$CDS_length[data2$type == "non-Core"], data2$CDS_length[data2$type == "Core"])
+
+p6 <- 
+  ggplot(data2, aes(type, CDS_length, color = type)) +
+  geom_boxplot(width = 0.7, outlier.color = NA, alpha = 1) +
+  # 使用 shape = 21 创建带外圈的散点，填充颜色通过 aes 来映射
+  geom_jitter(width = 0.2, size = 5, alpha = 1, shape = 21, 
+              aes(fill = type), color = "black", stroke =0.5) +  # 使用 aes(fill = type) 映射数据中的分类变量
+  scale_color_manual(values = color1) +  # 映射外圈的颜色，使用 color1
+  scale_fill_manual(values = color1) +  # 映射填充色，使用 color1
+  xlab('') + ylab('CDS length') +
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.margin = margin(t = 15, r = 15, b = 15, l = 15), # 调整图表边距
+        axis.text.x = element_text(angle = 0, hjust = 0.5, colour = "black",
+                                   family = "Times", size = 15, face = "bold"),
+        axis.text.y = element_text(hjust = 0.5, colour = "black",
+                                   family = "Times", size = 15, face = "bold"),
+        axis.title.x = element_text(hjust = 0.5, colour = "black",
+                                    family = "Times", size = 15, face = "bold"), 
+        axis.title.y = element_text(hjust = 0.5, colour = "black",
+                                    family = "Times", size = 15, face = "bold"),
+        legend.position = 'none')
+
+p6
+
+pFig5F <- p6 +
+  ylim(c(0, 4000)) +  # 根据需要调整 Y 轴的范围
+  stat_compare_means(comparisons = my_comparisons,method = "t.test",
+                     label = "p.signif",size = 8) 
+
+pFig5F
+#Comparison of CDS length (bp) between core and non-core TCP genes.
+#######################################################Fig 5F
